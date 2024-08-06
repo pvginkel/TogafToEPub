@@ -34,7 +34,7 @@ build_togafcleanup() {
 run_togafcleanup() {
     cd $ROOT
 
-    docker run -v $ROOT/tmp:/work togafcleanup /work/togaf /work/togaf-rewritten
+    docker run --rm -v $ROOT/tmp:/work togafcleanup /work/togaf /work/togaf-rewritten
 }
 
 run_pandoc() {
@@ -44,6 +44,7 @@ run_pandoc() {
 
     for f in $(find $ROOT/tmp/togaf-rewritten -name metadata.xml); do
         cd "$(dirname "$f")"
+
         pandoc \
             --standalone \
             $(find . -type d -printf "--resource-path=%f ") \
@@ -51,6 +52,7 @@ run_pandoc() {
             --toc \
             --epub-cover-image="$ROOT/tmp/togaf/adm/Figures/adm.png" \
             --epub-metadata="$f" \
+            --split-level=2 \
             $(find . -name "*.html" | sort)
     done
 }
