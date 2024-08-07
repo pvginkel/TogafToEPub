@@ -34,27 +34,34 @@ build_togafcleanup() {
 run_togafcleanup() {
     cd $ROOT
 
-    docker run --rm -v $ROOT/tmp:/work togafcleanup /work/togaf /work/togaf-rewritten
+    rm -Rf $ROOT/tmp/togaf-rewritten
+    docker run --rm --user="$(id -u):$(id -g)" -v $ROOT/tmp:/work togafcleanup /work/togaf /work/togaf-rewritten
 }
 
 run_pandoc() {
-    cd $ROOT
-
     mkdir -p $ROOT/out
 
-    for f in $(find $ROOT/tmp/togaf-rewritten -name metadata.xml); do
-        cd "$(dirname "$f")"
+    cd $ROOT/tmp/togaf-rewritten
 
-        pandoc \
-            --standalone \
-            $(find . -type d -printf "--resource-path=%f ") \
-            --output "$ROOT/out/$(cat title.txt).epub" \
-            --toc \
-            --epub-cover-image="$ROOT/tmp/togaf/adm/Figures/adm.png" \
-            --epub-metadata="$f" \
-            --split-level=2 \
-            $(find . -name "*.html" | sort)
-    done
+    cat << EOF > script.sh
+#!/bin/sh
+
+cd /data/tmp/togaf-rewritten
+
+pandoc \
+    --standalone \
+    $(find . -type d -printf "--resource-path=%p ") \
+    --output "/data/out/Togaf 10.epub" \
+    --metadata title="Togaf 10" \
+    --toc \
+    --epub-cover-image="/data/tmp/togaf/adm/Figures/adm.png" \
+    --epub-metadata=/data/metadata.xml \
+    --split-level=2 \
+    $(cat $ROOT/tmp/togaf-rewritten/paths.txt)
+EOF
+
+    chmod +x script.sh
+    docker run --rm --user="$(id -u):$(id -g)" -v $ROOT:/data --entrypoint /data/tmp/togaf-rewritten/script.sh pandoc/core
 }
 
 download_togaf
